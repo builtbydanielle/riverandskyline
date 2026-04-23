@@ -473,12 +473,9 @@ nav.scrolled { padding: 18px 60px; }
   align-self: end;
 }
 
-/* MASONRY GALLERY
-   PERFORMANCE: content-visibility:auto skips rendering off-screen columns */
+/* MASONRY GALLERY */
 .gallery-wrap {
   padding: 20px 60px 80px;
-  content-visibility: auto;
-  contain-intrinsic-size: 0 3000px; /* estimate — prevents layout jump */
 }
 
 .masonry { columns: 3; column-gap: 8px; }
@@ -496,13 +493,9 @@ nav.scrolled { padding: 18px 60px; }
 
 .m-item img {
   width: 100%; display: block;
-  /* PERFORMANCE: explicit aspect-ratio prevents layout shift */
-  aspect-ratio: 2/3;
   object-fit: cover;
   transition: transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94), filter 0.8s;
   filter: saturate(0.92);
-  /* PERFORMANCE: decode async — don't block main thread */
-  content-visibility: auto;
 }
 
 .m-item:hover img {
@@ -552,8 +545,6 @@ nav.scrolled { padding: 18px 60px; }
   line-height: 1;
   pointer-events: none;
   z-index: 0;
-  /* PERFORMANCE: isolate this paint layer */
-  contain: layout style;
 }
 
 .about-photo {
@@ -1533,8 +1524,6 @@ photos.forEach((p, i) => {
   img.alt = p.alt;
   img.loading = 'lazy';
   img.decoding = 'async';
-  img.width = 600;
-  img.height = 800; // approx — prevents CLS
 
   const ov = document.createElement('div');
   ov.className = 'm-ov';
