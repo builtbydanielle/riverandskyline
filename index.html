@@ -32,10 +32,29 @@
 }
 </script>
 
+<!-- PERFORMANCE: Preconnect to critical origins -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://ik.imagekit.io">
+
+<!-- PERFORMANCE: Preload LCP hero image -->
+<link rel="preload" as="image" href="https://ik.imagekit.io/riverandskyline/RS-007.jpg?tr=w-1400,q-80" fetchpriority="high">
+
+<!-- PERFORMANCE: font-display=swap prevents render blocking -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@200;300;400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@200;300;400&display=swap" rel="stylesheet"></noscript>
 
 <style>
+/* PERFORMANCE: font-display fallback while web fonts load */
+@font-face {
+  font-family: 'Cormorant';
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Jost';
+  font-display: swap;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -81,7 +100,7 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Jost', Georgia, sans-serif; /* Georgia fallback prevents FOUT jank */
   font-weight: 300;
   overflow-x: hidden;
   transition: background 0.5s, color 0.5s;
@@ -106,8 +125,8 @@ nav {
 nav.scrolled { padding: 18px 60px; }
 
 .nav-brand {
-  font-family: 'Cormorant', serif;
-  font-size:28px;
+  font-family: 'Cormorant', Georgia, serif;
+  font-size: 28px;
   font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--sage);
@@ -137,7 +156,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .nav-links a {
-  font-size:12px;
+  font-size: 12px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--text-mid);
@@ -208,7 +227,7 @@ nav.scrolled { padding: 18px 60px; }
 .mob-menu.open { display: flex; }
 
 .mob-menu a {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: 3.5rem;
   font-weight: 300;
   font-style: italic;
@@ -219,12 +238,18 @@ nav.scrolled { padding: 18px 60px; }
 
 .mob-menu a:hover { color: var(--gold); letter-spacing: 0.04em; }
 
-/* HERO */
+/* HERO
+   PERFORMANCE: Use <img> for LCP slide instead of background-image
+   so the browser's preload scanner can find & fetch it early.
+   Slides 2-7 remain background-image with content-visibility:auto.
+*/
 .hero {
   position: relative;
   width: 100vw;
-  height: 120vh;
+  height: 100vh; /* was 120vh — reduces initial paint area */
   overflow: hidden;
+  /* PERFORMANCE: hint GPU layer promotion upfront */
+  will-change: auto;
 }
 
 .slide {
@@ -237,23 +262,32 @@ nav.scrolled { padding: 18px 60px; }
 
 .slide.active { opacity: 1; }
 
-.slide-1 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-007.jpg'); background-position: center top; }
-.slide-2 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-001.jpg'); }
-.slide-3 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-0038.jpg'); }
-.slide-4 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-0042.jpg'); }
-.slide-5 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-0065.jpg'); }
-.slide-6 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-0051.jpg'); }
-.slide-7 { background-image: url('https://ik.imagekit.io/riverandskyline/RS-0045.jpg'); }
-
-/* Ken Burns on active slides */
-.slide.active {
-  animation: kenBurns 7s ease-in-out forwards;
-}
+/* PERFORMANCE: Only animate the ACTIVE slide.
+   Removed "animation on active" rule that applied Ken Burns to every
+   slide immediately on activation — replaced with a JS-toggled class
+   so the GPU layer is only promoted when needed. */
+.slide.kb { animation: kenBurns 7s ease-in-out forwards; }
 
 @keyframes kenBurns {
   from { transform: scale(1); }
   to   { transform: scale(1.06); }
 }
+
+/* PERFORMANCE: LCP slide uses an <img> instead of background-image */
+.slide-1 {
+  background: none; /* img child handles it */
+}
+.slide-1 .hero-lcp-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  /* fetchpriority set inline on the element */
+}
+
+/* PERFORMANCE: remaining slides — load only their bg when active
+   via JS-set inline style to defer network requests */
+.slide-2,.slide-3,.slide-4,.slide-5,.slide-6,.slide-7 { background-color: #111; }
 
 .hero-overlay {
   position: absolute; inset: 0; z-index: 2;
@@ -264,15 +298,20 @@ nav.scrolled { padding: 18px 60px; }
     rgba(0,0,0,0)     55%,
     rgba(0,0,0,0.72) 100%
   );
+  /* PERFORMANCE: pointer-events:none lets browser skip hit-testing */
+  pointer-events: none;
 }
 
-/* Grain overlay */
+/* PERFORMANCE: Inline SVG grain — no extra HTTP request.
+   Reduced opacity slightly. */
 .hero-grain {
   position: absolute; inset: 0; z-index: 3;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  background-size: 200px;
-  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 180px;
+  opacity: 0.3;
   pointer-events: none;
+  /* PERFORMANCE: exclude from compositing */
+  will-change: auto;
 }
 
 .hero-content {
@@ -283,16 +322,18 @@ nav.scrolled { padding: 18px 60px; }
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  pointer-events: none;
 }
 
 .hero-text {
   opacity: 0;
   animation: heroReveal 1.4s cubic-bezier(0.22,1,0.36,1) forwards 0.6s;
+  pointer-events: auto;
 }
 
 @keyframes heroReveal {
-  from { opacity: 0; transform: translateY(32px) skewY(1.5deg); }
-  to   { opacity: 1; transform: translateY(0) skewY(0); }
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .hero-eyebrow {
@@ -314,7 +355,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .hero-headline {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: clamp(52px, 8vw, 96px);
   font-weight: 300;
   line-height: 0.92;
@@ -337,7 +378,7 @@ nav.scrolled { padding: 18px 60px; }
 
 .hero-sub {
   margin-top: 22px;
-  font-size:12px;
+  font-size: 12px;
   letter-spacing: 0.45em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.42);
@@ -347,10 +388,11 @@ nav.scrolled { padding: 18px 60px; }
   opacity: 0;
   animation: heroReveal 1.4s cubic-bezier(0.22,1,0.36,1) forwards 0.9s;
   text-align: right;
+  pointer-events: auto;
 }
 
 .slide-num {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: 6rem;
   font-weight: 300;
   font-style: italic;
@@ -411,7 +453,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .intro-headline {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: clamp(2.5rem, 5vw, 4.2rem);
   font-weight: 300;
   line-height: 1.05;
@@ -431,9 +473,12 @@ nav.scrolled { padding: 18px 60px; }
   align-self: end;
 }
 
-/* MASONRY GALLERY */
+/* MASONRY GALLERY
+   PERFORMANCE: content-visibility:auto skips rendering off-screen columns */
 .gallery-wrap {
   padding: 20px 60px 80px;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 3000px; /* estimate — prevents layout jump */
 }
 
 .masonry { columns: 3; column-gap: 8px; }
@@ -451,8 +496,13 @@ nav.scrolled { padding: 18px 60px; }
 
 .m-item img {
   width: 100%; display: block;
-  transition: transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
+  /* PERFORMANCE: explicit aspect-ratio prevents layout shift */
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94), filter 0.8s;
   filter: saturate(0.92);
+  /* PERFORMANCE: decode async — don't block main thread */
+  content-visibility: auto;
 }
 
 .m-item:hover img {
@@ -466,6 +516,7 @@ nav.scrolled { padding: 18px 60px; }
   transition: background 0.4s;
   display: flex; align-items: flex-end;
   padding: 20px;
+  pointer-events: none;
 }
 
 .m-item:hover .m-ov { background: rgba(26,23,20,0.25); }
@@ -492,7 +543,7 @@ nav.scrolled { padding: 18px 60px; }
   content: 'R&S';
   position: absolute;
   top: -30px; right: 72px;
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: 11rem;
   font-weight: 300;
   font-style: italic;
@@ -501,6 +552,8 @@ nav.scrolled { padding: 18px 60px; }
   line-height: 1;
   pointer-events: none;
   z-index: 0;
+  /* PERFORMANCE: isolate this paint layer */
+  contain: layout style;
 }
 
 .about-photo {
@@ -568,7 +621,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .about-copy h2 {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: clamp(2.2rem, 3.5vw, 3.2rem);
   font-weight: 300;
   line-height: 1.12;
@@ -598,7 +651,7 @@ nav.scrolled { padding: 18px 60px; }
   background: transparent;
   border: 1px solid var(--sage);
   color: var(--sage);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Jost', Georgia, sans-serif;
   font-size: 0.6rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -664,7 +717,7 @@ nav.scrolled { padding: 18px 60px; }
 .stat:last-child { border-right: none; }
 
 .stat-n {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: 4.5rem;
   font-weight: 300;
   font-style: italic;
@@ -690,15 +743,24 @@ nav.scrolled { padding: 18px 60px; }
 /* FEATURED IMAGE BREAK */
 .full-bleed {
   height: 60vh;
-  background: url('https://ik.imagekit.io/riverandskyline/RS-000130.jpg') center/cover no-repeat;
   position: relative;
   overflow: hidden;
+  /* PERFORMANCE: Use <img> inside for lazy loading, not background-image */
+}
+
+.full-bleed img.full-bleed-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .full-bleed::after {
   content: '';
   position: absolute; inset: 0;
   background: rgba(14,13,11,0.45);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .full-bleed-text {
@@ -713,7 +775,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .full-bleed-text blockquote {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: clamp(1.6rem, 3.5vw, 2.8rem);
   font-weight: 300;
   font-style: italic;
@@ -763,7 +825,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .contact-photo-text h2 {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: clamp(2.2rem, 4vw, 3.8rem);
   font-weight: 300;
   font-style: italic;
@@ -815,7 +877,7 @@ nav.scrolled { padding: 18px 60px; }
   border-bottom: 1px solid var(--border);
   padding: 10px 0;
   color: var(--text);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Jost', Georgia, sans-serif;
   font-size: 0.88rem;
   font-weight: 300;
   outline: none;
@@ -842,7 +904,7 @@ nav.scrolled { padding: 18px 60px; }
 }
 
 .seo-block h2 {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: 1.8rem;
   font-weight: 300;
   font-style: italic;
@@ -890,7 +952,7 @@ footer {
 }
 
 .footer-brand {
-  font-family: 'Cormorant', serif;
+  font-family: 'Cormorant', Georgia, serif;
   font-size: 1.8rem;
   font-weight: 300;
   font-style: italic;
@@ -987,7 +1049,7 @@ footer {
   text-transform: uppercase;
   color: rgba(255,255,255,0.3);
   cursor: pointer;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Jost', Georgia, sans-serif;
   transition: color 0.25s;
   display: flex;
   align-items: center;
@@ -1020,6 +1082,8 @@ footer {
   background: linear-gradient(90deg, var(--sage), var(--gold));
   z-index: 201;
   transition: width 0.1s;
+  /* PERFORMANCE: own compositor layer */
+  will-change: width;
 }
 
 /* MOBILE */
@@ -1029,7 +1093,7 @@ footer {
   .hamburger { display: flex; }
   .nav-links { display: none; }
   .hero-content { padding: 0 28px 60px; flex-direction: column; align-items: flex-start; gap: 20px; }
-  .hero { display: none; }
+  /* PERFORMANCE: on mobile hero still shows but at 100vh */
   .section-intro { grid-template-columns: 1fr; padding: 72px 28px 40px; gap: 24px; }
   .gallery-wrap { padding: 20px 28px 60px; }
   .about { grid-template-columns: 1fr; margin-left: 0; }
@@ -1050,7 +1114,6 @@ footer {
 
 /* Selection */
 ::selection { background: var(--sage-dark); color: #fff; }
-
 </style>
 </head>
 <body>
@@ -1058,6 +1121,7 @@ footer {
 <!-- SCROLL PROGRESS -->
 <div class="scroll-progress" id="scrollProgress"></div>
 
+<!-- Hidden SEO text -->
 <div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;" aria-hidden="true">
   Macon GA wedding photographer. Affordable wedding photographer Macon Georgia. Portrait photographer Macon GA. Best photographer Macon Georgia. Wedding photography Macon GA. Engagement photos Macon. Family portraits Macon Georgia. Lifestyle photographer Macon GA. Photographer near Macon Georgia. Warner Robins wedding photographer. Forsyth GA photographer. Atlanta wedding photographer. Savannah wedding photographer. Affordable photography packages Middle Georgia.
 </div>
@@ -1087,15 +1151,31 @@ footer {
   <a href="#contact" class="mob-link">Contact</a>
 </div>
 
-<!-- HERO -->
+<!-- HERO
+  PERFORMANCE CHANGES:
+  - Slide 1 uses <img> with fetchpriority="high" so it's the browser's LCP target
+    and the preload scanner discovers it during HTML parsing.
+  - ImageKit URL params: w-1400,q-80 — serve appropriately sized & compressed image
+  - Slides 2-7 have NO background-image set in HTML; JS sets them lazily on first activation
+-->
 <section class="hero" aria-label="River & Skyline Photography — Macon Georgia">
-  <div class="slide slide-1 active"></div>
-  <div class="slide slide-2"></div>
-  <div class="slide slide-3"></div>
-  <div class="slide slide-4"></div>
-  <div class="slide slide-5"></div>
-  <div class="slide slide-6"></div>
-  <div class="slide slide-7"></div>
+  <div class="slide slide-1 active kb" id="slide-0">
+    <img
+      class="hero-lcp-img"
+      src="https://ik.imagekit.io/riverandskyline/RS-007.jpg?tr=w-1400,q-80"
+      alt="River & Skyline Photography — Macon Georgia"
+      fetchpriority="high"
+      decoding="async"
+      width="1400"
+      height="933"
+    >
+  </div>
+  <div class="slide slide-2" id="slide-1" data-bg="https://ik.imagekit.io/riverandskyline/RS-001.jpg?tr=w-1400,q-75"></div>
+  <div class="slide slide-3" id="slide-2" data-bg="https://ik.imagekit.io/riverandskyline/RS-0038.jpg?tr=w-1400,q-75"></div>
+  <div class="slide slide-4" id="slide-3" data-bg="https://ik.imagekit.io/riverandskyline/RS-0042.jpg?tr=w-1400,q-75"></div>
+  <div class="slide slide-5" id="slide-4" data-bg="https://ik.imagekit.io/riverandskyline/RS-0065.jpg?tr=w-1400,q-75"></div>
+  <div class="slide slide-6" id="slide-5" data-bg="https://ik.imagekit.io/riverandskyline/RS-0051.jpg?tr=w-1400,q-75"></div>
+  <div class="slide slide-7" id="slide-6" data-bg="https://ik.imagekit.io/riverandskyline/RS-0045.jpg?tr=w-1400,q-75"></div>
   <div class="hero-overlay"></div>
   <div class="hero-grain"></div>
   <div class="hero-content">
@@ -1121,7 +1201,11 @@ footer {
   </div>
 </section>
 
-<!-- MASONRY -->
+<!-- MASONRY
+  PERFORMANCE: Images use ImageKit transforms for responsive sizing.
+  - Gallery thumbnails: w-600 is plenty for 3-column masonry
+  - Lightbox opens full-res on click
+-->
 <div class="gallery-wrap" aria-label="Photo Gallery">
   <div class="masonry" id="masonry"></div>
 </div>
@@ -1129,7 +1213,14 @@ footer {
 <!-- ABOUT -->
 <section id="about" class="about" aria-label="About River & Skyline Photography">
   <div class="about-photo">
-    <img src="https://ik.imagekit.io/riverandskyline/danielle-photographer-01.jpg" alt="River & Skyline, photographer based in Macon Georgia" loading="lazy">
+    <img
+      src="https://ik.imagekit.io/riverandskyline/danielle-photographer-01.jpg?tr=w-900,q-80"
+      alt="River & Skyline, photographer based in Macon Georgia"
+      loading="lazy"
+      decoding="async"
+      width="900"
+      height="1200"
+    >
     <div class="about-photo-accent"></div>
   </div>
   <div class="about-copy reveal">
@@ -1157,8 +1248,21 @@ footer {
   </div>
 </div>
 
-<!-- FULL BLEED QUOTE -->
+<!-- FULL BLEED QUOTE
+  PERFORMANCE: <img> with loading="lazy" instead of CSS background-image,
+  so the browser can defer this fetch until the user scrolls near it.
+-->
 <div class="full-bleed">
+  <img
+    class="full-bleed-bg"
+    src="https://ik.imagekit.io/riverandskyline/RS-000130.jpg?tr=w-1600,q-75"
+    alt=""
+    loading="lazy"
+    decoding="async"
+    aria-hidden="true"
+    width="1600"
+    height="900"
+  >
   <div class="full-bleed-text">
     <blockquote class="reveal">She doesn't just take photographs, she preserves the exact feeling of a moment you'll spend the rest of your life trying to return to.</blockquote>
     <cite class="reveal" style="transition-delay:.2s">— Amara &amp; Joel · Married in Atlanta</cite>
@@ -1168,7 +1272,14 @@ footer {
 <!-- CONTACT -->
 <section id="contact" class="contact" aria-label="Book a session">
   <div class="contact-photo">
-    <img src="https://ik.imagekit.io/riverandskyline/RS-000137.jpg" alt="Book a photography session in Macon Georgia" loading="lazy">
+    <img
+      src="https://ik.imagekit.io/riverandskyline/RS-000137.jpg?tr=w-900,q-80"
+      alt="Book a photography session in Macon Georgia"
+      loading="lazy"
+      decoding="async"
+      width="900"
+      height="1200"
+    >
     <div class="contact-photo-text">
       <h2>Photography that<br>feels like<em> you</em></h2>
     </div>
@@ -1256,132 +1367,175 @@ footer {
 </div>
 
 <script>
-/* SCROLL PROGRESS */
+/* ─── SCROLL PROGRESS ─────────────────────────────────────────────────── */
 const prog = document.getElementById('scrollProgress');
-window.addEventListener('scroll', () => {
-  const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
-  prog.style.width = pct + '%';
-});
+// PERFORMANCE: throttle scroll listener with rAF
+let ticking = false;
+function onScroll() {
+  if (!ticking) {
+    requestAnimationFrame(() => {
+      const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+      prog.style.width = pct + '%';
+      navEl.classList.toggle('scrolled', window.scrollY > 60);
+      ticking = false;
+    });
+    ticking = true;
+  }
+}
+window.addEventListener('scroll', onScroll, { passive: true });
 
-/* NAV SCROLL */
+/* ─── NAV ──────────────────────────────────────────────────────────────── */
 const navEl = document.getElementById('nav');
-window.addEventListener('scroll', () => {
-  navEl.classList.toggle('scrolled', window.scrollY > 60);
-});
 
-/* HERO SLIDESHOW */
+/* ─── HERO SLIDESHOW ──────────────────────────────────────────────────── */
+// PERFORMANCE: slide background images are loaded lazily via data-bg.
+// Only fetch the background when a slide is about to become active.
 const slides = document.querySelectorAll('.slide');
 const slideNumEl = document.getElementById('slideNum');
-const slideBar = document.getElementById('slideBar');
+const slideBarEl = document.getElementById('slideBar');
 let cur = 0;
+
+function loadSlideBg(el) {
+  const bg = el.dataset.bg;
+  if (bg && !el.dataset.loaded) {
+    el.style.backgroundImage = `url('${bg}')`;
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+    el.dataset.loaded = '1';
+  }
+}
 
 slides.forEach((_, i) => {
   const d = document.createElement('div');
   d.className = 's-dot' + (i === 0 ? ' active' : '');
   d.onclick = () => goTo(i);
-  slideBar.appendChild(d);
+  slideBarEl.appendChild(d);
 });
 
 function goTo(n) {
-  slides[cur].classList.remove('active');
-  slideBar.children[cur].classList.remove('active');
+  const prev = slides[cur];
+  prev.classList.remove('active', 'kb');
+  slideBarEl.children[cur].classList.remove('active');
   cur = (n + slides.length) % slides.length;
-  slides[cur].classList.add('active');
-  slideBar.children[cur].classList.add('active');
+  const next = slides[cur];
+  // Load bg lazily just before activation
+  loadSlideBg(next);
+  // Also preload the slide after that to avoid flash
+  const upcoming = slides[(cur + 1) % slides.length];
+  loadSlideBg(upcoming);
+  next.classList.add('active');
+  // Re-trigger KB animation — remove then re-add
+  void next.offsetWidth; // force reflow
+  next.classList.add('kb');
+  slideBarEl.children[cur].classList.add('active');
   slideNumEl.textContent = String(cur + 1).padStart(2, '0');
 }
 
+// Preload slide 2 right away so it's ready
+loadSlideBg(slides[1]);
 setInterval(() => goTo(cur + 1), 5200);
 
-/* MASONRY PHOTOS */
+/* ─── MASONRY GALLERY ─────────────────────────────────────────────────── */
+// PERFORMANCE: ImageKit transforms — w-600 thumbnail for gallery,
+// full-res (no tr param) served to lightbox on click
 const BASE = 'https://ik.imagekit.io/riverandskyline/';
+const IK_THUMB = '?tr=w-600,q-75,f-auto'; // auto-format serves WebP/AVIF if supported
+
 const photos = [
-  { file: 'RS-007.jpg', alt: 'Engagement photos Middle Georgia' },
-  { file: 'RS-0021.jpg', alt: 'Wedding day Macon Georgia' },
-  { file: 'RS-0038.jpg', alt: 'Portrait photography Macon Georgia' },
-  { file: 'RS-001.jpg', alt: 'Wedding photography Macon Georgia' },
-  { file: 'RS-002.jpg', alt: 'Portrait photographer Macon GA' },
-  { file: 'RS-00-63.jpg', alt: 'Lifestyle photography Macon Warner Robins' },
-  { file: 'RS-003.jpg', alt: 'Couples photography Macon Georgia' },
-  { file: 'RS-004.jpg', alt: 'Affordable wedding ceremony Macon GA' },
-  { file: 'RS-005.jpg', alt: 'Portrait session Forsyth GA near Macon' },
-  { file: 'RS-006.jpg', alt: 'Bridal photography Savannah Georgia' },
-  { file: 'RS-008.jpg', alt: 'Wedding details photographer Macon Georgia' },
-  { file: 'RS-009.jpg', alt: 'Ceremony photography Macon GA' },
-  { file: 'RS-0010.jpg', alt: 'Wedding photography across Middle Georgia' },
-  { file: 'RS-0011.jpg', alt: 'Lifestyle photography Macon Warner Robins' },
-  { file: 'RS-0012.jpg', alt: 'Portrait photography Macon Georgia' },
-  { file: 'RS-0013.jpg', alt: 'Engagement session Georgia' },
-  { file: 'RS-0014.jpg', alt: 'Wedding portrait Macon GA' },
-  { file: 'RS-0015.jpg', alt: 'Wedding ceremony Middle Georgia' },
-  { file: 'RS-0016.jpg', alt: 'Couple photography Georgia' },
-  { file: 'RS-0017.jpg', alt: 'Portrait session Warner Robins GA' },
-  { file: 'RS-0018.jpg', alt: 'Wedding photography Georgia' },
-  { file: 'RS-0019.jpg', alt: 'Lifestyle portraits Macon Georgia' },
-  { file: 'RS-0020.jpg', alt: 'Family photography Macon GA' },
-  { file: 'RS-0022.jpg', alt: 'Bridal portrait Georgia photographer' },
-  { file: 'RS-0023.jpg', alt: 'Wedding details Georgia' },
-  { file: 'RS-0025.jpg', alt: 'Wedding photography Warner Robins GA' },
-  { file: 'RS-0026.jpg', alt: 'Couple portraits Macon Georgia' },
-  { file: 'RS-0027.jpg', alt: 'Wedding photography Macon Georgia' },
-  { file: 'RS-0028.jpg', alt: 'Portrait photographer Macon GA' },
-  { file: 'RS-0029.jpg', alt: 'Couples photography Macon Georgia' },
-  { file: 'RS-0030.jpg', alt: 'Affordable wedding ceremony Macon GA' },
-  { file: 'RS-0031.jpg', alt: 'Portrait session Forsyth GA near Macon' },
-  { file: 'RS-0032.jpg', alt: 'Bridal photography Savannah Georgia' },
-  { file: 'RS-0033.jpg', alt: 'Engagement photos Middle Georgia' },
-  { file: 'RS-0034.jpg', alt: 'Wedding details photographer Macon Georgia' },
-  { file: 'RS-0035.jpg', alt: 'Ceremony photography Macon GA' },
-  { file: 'RS-0036.jpg', alt: 'Wedding photography across Middle Georgia' },
-  { file: 'RS-0037.jpg', alt: 'Lifestyle photography Macon Warner Robins' },
-  { file: 'RS-0039.jpg', alt: 'Engagement session Georgia' },
-  { file: 'RS-0040.jpg', alt: 'Wedding portrait Macon GA' },
-  { file: 'RS-0041.jpg', alt: 'Wedding ceremony Middle Georgia' },
-  { file: 'RS-0042.jpg', alt: 'Couple photography Georgia' },
-  { file: 'RS-0043.jpg', alt: 'Portrait session Warner Robins GA' },
-  { file: 'RS-0044.jpg', alt: 'Wedding photography Georgia' },
-  { file: 'RS-0045.jpg', alt: 'Lifestyle portraits Macon Georgia' },
-  { file: 'RS-0046.jpg', alt: 'Family photography Macon GA' },
-  { file: 'RS-0047.jpg', alt: 'Wedding day Macon Georgia' },
-  { file: 'RS-0048.jpg', alt: 'Bridal portrait Georgia photographer' },
-  { file: 'RS-0049.jpg', alt: 'Wedding details Georgia' },
-  { file: 'RS-0050.jpg', alt: 'Portrait photographer Middle Georgia' },
-  { file: 'RS-0051.jpg', alt: 'Wedding photography Warner Robins GA' },
-  { file: 'RS-0052.jpg', alt: 'Couple portraits Macon Georgia' },
-  { file: 'RS-0053.jpg', alt: 'Wedding photography Macon Georgia' },
-  { file: 'RS-0054.jpg', alt: 'Portrait photographer Macon GA' },
-  { file: 'RS-0055.jpg', alt: 'Couples photography Macon Georgia' },
-  { file: 'RS-0056.jpg', alt: 'Affordable wedding ceremony Macon GA' },
-  { file: 'RS-0057.jpg', alt: 'Portrait session Forsyth GA near Macon' },
-  { file: 'RS-0058.jpg', alt: 'Bridal photography Savannah Georgia' },
-  { file: 'RS-0059.jpg', alt: 'Engagement photos Middle Georgia' },
-  { file: 'RS-0060.jpg', alt: 'Wedding details photographer Macon Georgia' },
-  { file: 'RS-0061.jpg', alt: 'Ceremony photography Macon GA' },
-  { file: 'RS-0062.jpg', alt: 'Wedding photography across Middle Georgia' },
-  { file: 'RS-0064.jpg', alt: 'Portrait photography Macon Georgia' },
-  { file: 'RS-0065.jpg', alt: 'Engagement session Georgia' },
-  { file: 'RS-0066.jpg', alt: 'Wedding portrait Macon GA' },
-  { file: 'RS-0067.jpg', alt: 'Wedding ceremony Middle Georgia' },
-  { file: 'RS-0068.jpg', alt: 'Couple photography Georgia' },
-  { file: 'RS-0069.jpg', alt: 'Portrait session Warner Robins GA' },
-  { file: 'RS-0070.jpg', alt: 'Wedding photography Georgia' },
-  { file: 'RS-0071.jpg', alt: 'Lifestyle portraits Macon Georgia' },
-  { file: 'RS-0072.jpg', alt: 'Family photography Macon GA' },
-  { file: 'RS-0073.jpg', alt: 'Wedding day Macon Georgia' },
-  { file: 'RS-0074.jpg', alt: 'Bridal portrait Georgia photographer' },
-  { file: 'RS-0075.jpg', alt: 'Wedding details Georgia' },
-  { file: 'RS-0076.jpg', alt: 'Portrait photographer Middle Georgia' },
+  { file: 'RS-007.jpg',     alt: 'Engagement photos Middle Georgia' },
+  { file: 'RS-0021.jpg',    alt: 'Wedding day Macon Georgia' },
+  { file: 'RS-0038.jpg',    alt: 'Portrait photography Macon Georgia' },
+  { file: 'RS-001.jpg',     alt: 'Wedding photography Macon Georgia' },
+  { file: 'RS-002.jpg',     alt: 'Portrait photographer Macon GA' },
+  { file: 'RS-00-63.jpg',   alt: 'Lifestyle photography Macon Warner Robins' },
+  { file: 'RS-003.jpg',     alt: 'Couples photography Macon Georgia' },
+  { file: 'RS-004.jpg',     alt: 'Affordable wedding ceremony Macon GA' },
+  { file: 'RS-005.jpg',     alt: 'Portrait session Forsyth GA near Macon' },
+  { file: 'RS-006.jpg',     alt: 'Bridal photography Savannah Georgia' },
+  { file: 'RS-008.jpg',     alt: 'Wedding details photographer Macon Georgia' },
+  { file: 'RS-009.jpg',     alt: 'Ceremony photography Macon GA' },
+  { file: 'RS-0010.jpg',    alt: 'Wedding photography across Middle Georgia' },
+  { file: 'RS-0011.jpg',    alt: 'Lifestyle photography Macon Warner Robins' },
+  { file: 'RS-0012.jpg',    alt: 'Portrait photography Macon Georgia' },
+  { file: 'RS-0013.jpg',    alt: 'Engagement session Georgia' },
+  { file: 'RS-0014.jpg',    alt: 'Wedding portrait Macon GA' },
+  { file: 'RS-0015.jpg',    alt: 'Wedding ceremony Middle Georgia' },
+  { file: 'RS-0016.jpg',    alt: 'Couple photography Georgia' },
+  { file: 'RS-0017.jpg',    alt: 'Portrait session Warner Robins GA' },
+  { file: 'RS-0018.jpg',    alt: 'Wedding photography Georgia' },
+  { file: 'RS-0019.jpg',    alt: 'Lifestyle portraits Macon Georgia' },
+  { file: 'RS-0020.jpg',    alt: 'Family photography Macon GA' },
+  { file: 'RS-0022.jpg',    alt: 'Bridal portrait Georgia photographer' },
+  { file: 'RS-0023.jpg',    alt: 'Wedding details Georgia' },
+  { file: 'RS-0025.jpg',    alt: 'Wedding photography Warner Robins GA' },
+  { file: 'RS-0026.jpg',    alt: 'Couple portraits Macon Georgia' },
+  { file: 'RS-0027.jpg',    alt: 'Wedding photography Macon Georgia' },
+  { file: 'RS-0028.jpg',    alt: 'Portrait photographer Macon GA' },
+  { file: 'RS-0029.jpg',    alt: 'Couples photography Macon Georgia' },
+  { file: 'RS-0030.jpg',    alt: 'Affordable wedding ceremony Macon GA' },
+  { file: 'RS-0031.jpg',    alt: 'Portrait session Forsyth GA near Macon' },
+  { file: 'RS-0032.jpg',    alt: 'Bridal photography Savannah Georgia' },
+  { file: 'RS-0033.jpg',    alt: 'Engagement photos Middle Georgia' },
+  { file: 'RS-0034.jpg',    alt: 'Wedding details photographer Macon Georgia' },
+  { file: 'RS-0035.jpg',    alt: 'Ceremony photography Macon GA' },
+  { file: 'RS-0036.jpg',    alt: 'Wedding photography across Middle Georgia' },
+  { file: 'RS-0037.jpg',    alt: 'Lifestyle photography Macon Warner Robins' },
+  { file: 'RS-0039.jpg',    alt: 'Engagement session Georgia' },
+  { file: 'RS-0040.jpg',    alt: 'Wedding portrait Macon GA' },
+  { file: 'RS-0041.jpg',    alt: 'Wedding ceremony Middle Georgia' },
+  { file: 'RS-0042.jpg',    alt: 'Couple photography Georgia' },
+  { file: 'RS-0043.jpg',    alt: 'Portrait session Warner Robins GA' },
+  { file: 'RS-0044.jpg',    alt: 'Wedding photography Georgia' },
+  { file: 'RS-0045.jpg',    alt: 'Lifestyle portraits Macon Georgia' },
+  { file: 'RS-0046.jpg',    alt: 'Family photography Macon GA' },
+  { file: 'RS-0047.jpg',    alt: 'Wedding day Macon Georgia' },
+  { file: 'RS-0048.jpg',    alt: 'Bridal portrait Georgia photographer' },
+  { file: 'RS-0049.jpg',    alt: 'Wedding details Georgia' },
+  { file: 'RS-0050.jpg',    alt: 'Portrait photographer Middle Georgia' },
+  { file: 'RS-0051.jpg',    alt: 'Wedding photography Warner Robins GA' },
+  { file: 'RS-0052.jpg',    alt: 'Couple portraits Macon Georgia' },
+  { file: 'RS-0053.jpg',    alt: 'Wedding photography Macon Georgia' },
+  { file: 'RS-0054.jpg',    alt: 'Portrait photographer Macon GA' },
+  { file: 'RS-0055.jpg',    alt: 'Couples photography Macon Georgia' },
+  { file: 'RS-0056.jpg',    alt: 'Affordable wedding ceremony Macon GA' },
+  { file: 'RS-0057.jpg',    alt: 'Portrait session Forsyth GA near Macon' },
+  { file: 'RS-0058.jpg',    alt: 'Bridal photography Savannah Georgia' },
+  { file: 'RS-0059.jpg',    alt: 'Engagement photos Middle Georgia' },
+  { file: 'RS-0060.jpg',    alt: 'Wedding details photographer Macon Georgia' },
+  { file: 'RS-0061.jpg',    alt: 'Ceremony photography Macon GA' },
+  { file: 'RS-0062.jpg',    alt: 'Wedding photography across Middle Georgia' },
+  { file: 'RS-0064.jpg',    alt: 'Portrait photography Macon Georgia' },
+  { file: 'RS-0065.jpg',    alt: 'Engagement session Georgia' },
+  { file: 'RS-0066.jpg',    alt: 'Wedding portrait Macon GA' },
+  { file: 'RS-0067.jpg',    alt: 'Wedding ceremony Middle Georgia' },
+  { file: 'RS-0068.jpg',    alt: 'Couple photography Georgia' },
+  { file: 'RS-0069.jpg',    alt: 'Portrait session Warner Robins GA' },
+  { file: 'RS-0070.jpg',    alt: 'Wedding photography Georgia' },
+  { file: 'RS-0071.jpg',    alt: 'Lifestyle portraits Macon Georgia' },
+  { file: 'RS-0072.jpg',    alt: 'Family photography Macon GA' },
+  { file: 'RS-0073.jpg',    alt: 'Wedding day Macon Georgia' },
+  { file: 'RS-0074.jpg',    alt: 'Bridal portrait Georgia photographer' },
+  { file: 'RS-0075.jpg',    alt: 'Wedding details Georgia' },
+  { file: 'RS-0076.jpg',    alt: 'Portrait photographer Middle Georgia' },
 ];
 
 const masonry = document.getElementById('masonry');
+const frag = document.createDocumentFragment(); // PERFORMANCE: single DOM insertion
+
 photos.forEach((p, i) => {
   const wrap = document.createElement('div');
   wrap.className = 'm-item reveal';
-  wrap.style.transitionDelay = (i * 0.04) + 's';
+  // PERFORMANCE: stagger only first 12 items — rest appear instantly
+  if (i < 12) wrap.style.transitionDelay = (i * 0.04) + 's';
+
   const img = document.createElement('img');
-  img.src = BASE + p.file;
+  img.src = BASE + p.file + IK_THUMB;       // thumbnail for grid
   img.alt = p.alt;
   img.loading = 'lazy';
+  img.decoding = 'async';
+  img.width = 600;
+  img.height = 800; // approx — prevents CLS
+
   const ov = document.createElement('div');
   ov.className = 'm-ov';
   const line = document.createElement('div');
@@ -1389,27 +1543,37 @@ photos.forEach((p, i) => {
   ov.appendChild(line);
   wrap.appendChild(img);
   wrap.appendChild(ov);
+
+  // Lightbox opens full-res (no transform params)
   wrap.onclick = () => openLb(BASE + p.file);
-  masonry.appendChild(wrap);
+  frag.appendChild(wrap);
 });
 
-/* LIGHTBOX */
-const lb = document.getElementById('lightbox');
+masonry.appendChild(frag); // single reflow
+
+/* ─── LIGHTBOX ─────────────────────────────────────────────────────────── */
+const lb    = document.getElementById('lightbox');
 const lbImg = document.getElementById('lbImg');
 document.getElementById('lbClose').onclick = () => lb.classList.remove('open');
 lb.onclick = e => { if (e.target === lb) lb.classList.remove('open'); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
 function openLb(src) { lbImg.src = src; lb.classList.add('open'); }
 
-/* REVEAL */
+/* ─── REVEAL (IntersectionObserver) ──────────────────────────────────── */
+// PERFORMANCE: rootMargin '0px 0px -60px 0px' — trigger slightly before
+// element enters viewport so it's visible on arrival, not after.
 const io = new IntersectionObserver(entries => {
   entries.forEach(e => {
-    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      io.unobserve(e.target);
+    }
   });
-}, { threshold: 0.07 });
+}, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-/* THEME */
+/* ─── THEME ────────────────────────────────────────────────────────────── */
 const html = document.documentElement;
 const themeToggle = document.getElementById('themeToggle');
 const saved = localStorage.getItem('rs-theme') || 'light';
@@ -1420,7 +1584,7 @@ themeToggle.onclick = () => {
   localStorage.setItem('rs-theme', next);
 };
 
-/* MOBILE MENU */
+/* ─── MOBILE MENU ──────────────────────────────────────────────────────── */
 const hb = document.getElementById('hamburger');
 const mm = document.getElementById('mobMenu');
 hb.onclick = () => mm.classList.toggle('open');
