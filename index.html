@@ -100,7 +100,7 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Jost', Georgia, sans-serif; /* Georgia fallback prevents FOUT jank */
+  font-family: 'Jost', Georgia, sans-serif;
   font-weight: 300;
   overflow-x: hidden;
   transition: background 0.5s, color 0.5s;
@@ -133,14 +133,6 @@ nav.scrolled { padding: 18px 60px; }
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.nav-brand::before {
-  content: '';
-  display: block;
-  width: 24px; height: 1px;
-  background: var(--gold);
 }
 
 .nav-right {
@@ -238,17 +230,12 @@ nav.scrolled { padding: 18px 60px; }
 
 .mob-menu a:hover { color: var(--gold); letter-spacing: 0.04em; }
 
-/* HERO
-   PERFORMANCE: Use <img> for LCP slide instead of background-image
-   so the browser's preload scanner can find & fetch it early.
-   Slides 2-7 remain background-image with content-visibility:auto.
-*/
+/* HERO */
 .hero {
   position: relative;
   width: 100vw;
-  height: 100vh; /* was 120vh — reduces initial paint area */
+  height: 100vh;
   overflow: hidden;
-  /* PERFORMANCE: hint GPU layer promotion upfront */
   will-change: auto;
 }
 
@@ -262,10 +249,6 @@ nav.scrolled { padding: 18px 60px; }
 
 .slide.active { opacity: 1; }
 
-/* PERFORMANCE: Only animate the ACTIVE slide.
-   Removed "animation on active" rule that applied Ken Burns to every
-   slide immediately on activation — replaced with a JS-toggled class
-   so the GPU layer is only promoted when needed. */
 .slide.kb { animation: kenBurns 7s ease-in-out forwards; }
 
 @keyframes kenBurns {
@@ -273,20 +256,16 @@ nav.scrolled { padding: 18px 60px; }
   to   { transform: scale(1.06); }
 }
 
-/* PERFORMANCE: LCP slide uses an <img> instead of background-image */
 .slide-1 {
-  background: none; /* img child handles it */
+  background: none;
 }
 .slide-1 .hero-lcp-img {
   width: 100%; height: 100%;
   object-fit: cover;
   object-position: center top;
   display: block;
-  /* fetchpriority set inline on the element */
 }
 
-/* PERFORMANCE: remaining slides — load only their bg when active
-   via JS-set inline style to defer network requests */
 .slide-2,.slide-3,.slide-4,.slide-5,.slide-6,.slide-7 { background-color: #111; }
 
 .hero-overlay {
@@ -298,19 +277,15 @@ nav.scrolled { padding: 18px 60px; }
     rgba(0,0,0,0)     55%,
     rgba(0,0,0,0.72) 100%
   );
-  /* PERFORMANCE: pointer-events:none lets browser skip hit-testing */
   pointer-events: none;
 }
 
-/* PERFORMANCE: Inline SVG grain — no extra HTTP request.
-   Reduced opacity slightly. */
 .hero-grain {
   position: absolute; inset: 0; z-index: 3;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   background-size: 180px;
   opacity: 0.3;
   pointer-events: none;
-  /* PERFORMANCE: exclude from compositing */
   will-change: auto;
 }
 
@@ -344,14 +319,6 @@ nav.scrolled { padding: 18px 60px; }
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.hero-eyebrow::before {
-  content: '';
-  display: block;
-  width: 32px; height: 1px;
-  background: var(--gold);
 }
 
 .hero-headline {
@@ -442,14 +409,7 @@ nav.scrolled { padding: 18px 60px; }
   color: var(--gold);
   display: flex;
   align-items: center;
-  gap: 12px;
   margin-bottom: 20px;
-}
-
-.intro-label::before {
-  content: '';
-  width: 28px; height: 1px;
-  background: var(--gold);
 }
 
 .intro-headline {
@@ -602,13 +562,6 @@ nav.scrolled { padding: 18px 60px; }
   margin-bottom: 22px;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.eyebrow::before {
-  content: '';
-  width: 24px; height: 1px;
-  background: var(--gold);
 }
 
 .about-copy h2 {
@@ -736,7 +689,6 @@ nav.scrolled { padding: 18px 60px; }
   height: 60vh;
   position: relative;
   overflow: hidden;
-  /* PERFORMANCE: Use <img> inside for lazy loading, not background-image */
 }
 
 .full-bleed img.full-bleed-bg {
@@ -951,13 +903,6 @@ footer {
   margin-bottom: 20px;
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.footer-brand::before {
-  content: '';
-  width: 20px; height: 1px;
-  background: var(--gold);
 }
 
 .footer-info {
@@ -1073,7 +1018,6 @@ footer {
   background: linear-gradient(90deg, var(--sage), var(--gold));
   z-index: 201;
   transition: width 0.1s;
-  /* PERFORMANCE: own compositor layer */
   will-change: width;
 }
 
@@ -1084,7 +1028,6 @@ footer {
   .hamburger { display: flex; }
   .nav-links { display: none; }
   .hero-content { padding: 0 28px 60px; flex-direction: column; align-items: flex-start; gap: 20px; }
-  /* PERFORMANCE: on mobile hero still shows but at 100vh */
   .section-intro { grid-template-columns: 1fr; padding: 72px 28px 40px; gap: 24px; }
   .gallery-wrap { padding: 20px 28px 60px; }
   .about { grid-template-columns: 1fr; margin-left: 0; }
@@ -1142,13 +1085,7 @@ footer {
   <a href="#contact" class="mob-link">Contact</a>
 </div>
 
-<!-- HERO
-  PERFORMANCE CHANGES:
-  - Slide 1 uses <img> with fetchpriority="high" so it's the browser's LCP target
-    and the preload scanner discovers it during HTML parsing.
-  - ImageKit URL params: w-1400,q-80 — serve appropriately sized & compressed image
-  - Slides 2-7 have NO background-image set in HTML; JS sets them lazily on first activation
--->
+<!-- HERO -->
 <section class="hero" aria-label="River & Skyline Photography — Macon Georgia">
   <div class="slide slide-1 active kb" id="slide-0">
     <img
@@ -1165,7 +1102,7 @@ footer {
   <div class="slide slide-3" id="slide-2" data-bg="https://ik.imagekit.io/riverandskyline/RS-0038.jpg?tr=w-1400,q-75"></div>
   <div class="slide slide-4" id="slide-3" data-bg="https://ik.imagekit.io/riverandskyline/RS-0042.jpg?tr=w-1400,q-75"></div>
   <div class="slide slide-5" id="slide-4" data-bg="https://ik.imagekit.io/riverandskyline/RS-0065.jpg?tr=w-1400,q-75"></div>
-  <div class="slide slide-6" id="slide-5" data-bg="https://ik.imagekit.io/riverandskyline/RS-0051.jpg?tr=w-1400,q-75"></div>
+  <div class="slide slide-6" id="slide-5" data-bg="https://ik.imagekit.io/riverandskyline/RS-205.jpg?tr=w-1400,q-75"></div>
   <div class="slide slide-7" id="slide-6" data-bg="https://ik.imagekit.io/riverandskyline/RS-0045.jpg?tr=w-1400,q-75"></div>
   <div class="hero-overlay"></div>
   <div class="hero-grain"></div>
@@ -1192,11 +1129,7 @@ footer {
   </div>
 </section>
 
-<!-- MASONRY
-  PERFORMANCE: Images use ImageKit transforms for responsive sizing.
-  - Gallery thumbnails: w-600 is plenty for 3-column masonry
-  - Lightbox opens full-res on click
--->
+<!-- MASONRY -->
 <div class="gallery-wrap" aria-label="Photo Gallery">
   <div class="masonry" id="masonry"></div>
 </div>
@@ -1217,8 +1150,8 @@ footer {
   <div class="about-copy reveal">
     <p class="eyebrow">ABOUT RIVER &amp; SKYLINE</p>
     <h2>Stories captured<br>in vivid <em>detail</em></h2>
-    <p>River &amp; Skyline is a photography project dedicated to capturing authentic moments of life across Georgia and beyond with a focus on the beauty of real moments. Each image is created with intention, emotion, movement, and the magic found in preserving tiny pieces of time.</p>
-    <p>River &amp; Skyline was started in the North Georgia area and is currently based near Macon, Georgia. Danielle started her freelance photography endeavors in 2010. Currently, her son, Eli, who has discovered a talent for capturing stunning images in his own style, is at his mom's side at weddings and events; they cover the entire state of Georgia, the southeast US region, and beyond.</p>
+    <p>River &amp; Skyline Photography is dedicated to capturing authentic life moments across Georgia and beyond. Each image is created with intention, movement, and the magic found in preserving tiny pieces of time.</p>
+    <p>River &amp; Skyline was started in the North Georgia area and is currently based near Macon, Georgia. Danielle started her freelance photography endeavors in 2010. Currently, her son, Eli, who has discovered a talent for capturing stunning images in his own style, is with his mom at weddings and events acting as a second photographer. They cover the entire state of Georgia, the southeast US region, and beyond.</p>
     <a href="#contact" class="btn"><span>Book a Session</span></a>
   </div>
 </section>
@@ -1239,14 +1172,11 @@ footer {
   </div>
 </div>
 
-<!-- FULL BLEED QUOTE
-  PERFORMANCE: <img> with loading="lazy" instead of CSS background-image,
-  so the browser can defer this fetch until the user scrolls near it.
--->
+<!-- FULL BLEED QUOTE -->
 <div class="full-bleed">
   <img
     class="full-bleed-bg"
-    src="https://ik.imagekit.io/riverandskyline/RS-000130.jpg?tr=w-1600,q-75"
+    src="https://ik.imagekit.io/riverandskyline/RS-0055.jpg?tr=w-1600,q-75"
     alt=""
     loading="lazy"
     decoding="async"
@@ -1264,7 +1194,7 @@ footer {
 <section id="contact" class="contact" aria-label="Book a session">
   <div class="contact-photo">
     <img
-      src="https://ik.imagekit.io/riverandskyline/RS-000137.jpg?tr=w-900,q-80"
+      src="https://ik.imagekit.io/riverandskyline/RS-204.jpg?tr=w-900,q-80"
       alt="Book a photography session in Macon Georgia"
       loading="lazy"
       decoding="async"
@@ -1313,7 +1243,7 @@ footer {
 <!-- SEO -->
 <section class="seo-block" aria-label="Service areas">
   <div>
-    <h2>Georgia's Affordable Wedding &amp; Portrait Photographer</h2>
+    <h2>Macon Georgia Lifestyle Photography</h2>
   </div>
   <div class="seo-right">
     <p>River &amp; Skyline Photography is the go-to wedding and portrait photographer, proudly serving everyone across Middle Georgia and the entire state. Whether you're planning a small, intimate ceremony, a downtown wedding venue, a backyard celebration, an elegant event, or a mountain elopement, we bring the same vivid, heartfelt approach to every single session.</p>
@@ -1347,7 +1277,7 @@ footer {
   </div>
   <div class="footer-bottom">
     <p>© 2026 River &amp; Skyline Photography · Macon, Georgia</p>
-    <p>Affordable Wedding &amp; Portrait Photography · Middle Georgia &amp; Beyond</p>
+    <Wedding &amp; Portrait Photography · Middle Georgia &amp; Beyond</p>
   </div>
 </footer>
 
@@ -1360,7 +1290,6 @@ footer {
 <script>
 /* ─── SCROLL PROGRESS ─────────────────────────────────────────────────── */
 const prog = document.getElementById('scrollProgress');
-// PERFORMANCE: throttle scroll listener with rAF
 let ticking = false;
 function onScroll() {
   if (!ticking) {
@@ -1379,8 +1308,6 @@ window.addEventListener('scroll', onScroll, { passive: true });
 const navEl = document.getElementById('nav');
 
 /* ─── HERO SLIDESHOW ──────────────────────────────────────────────────── */
-// PERFORMANCE: slide background images are loaded lazily via data-bg.
-// Only fetch the background when a slide is about to become active.
 const slides = document.querySelectorAll('.slide');
 const slideNumEl = document.getElementById('slideNum');
 const slideBarEl = document.getElementById('slideBar');
@@ -1409,28 +1336,22 @@ function goTo(n) {
   slideBarEl.children[cur].classList.remove('active');
   cur = (n + slides.length) % slides.length;
   const next = slides[cur];
-  // Load bg lazily just before activation
   loadSlideBg(next);
-  // Also preload the slide after that to avoid flash
   const upcoming = slides[(cur + 1) % slides.length];
   loadSlideBg(upcoming);
   next.classList.add('active');
-  // Re-trigger KB animation — remove then re-add
-  void next.offsetWidth; // force reflow
+  void next.offsetWidth;
   next.classList.add('kb');
   slideBarEl.children[cur].classList.add('active');
   slideNumEl.textContent = String(cur + 1).padStart(2, '0');
 }
 
-// Preload slide 2 right away so it's ready
 loadSlideBg(slides[1]);
 setInterval(() => goTo(cur + 1), 5200);
 
 /* ─── MASONRY GALLERY ─────────────────────────────────────────────────── */
-// PERFORMANCE: ImageKit transforms — w-600 thumbnail for gallery,
-// full-res (no tr param) served to lightbox on click
 const BASE = 'https://ik.imagekit.io/riverandskyline/';
-const IK_THUMB = '?tr=w-600,q-75,f-auto'; // auto-format serves WebP/AVIF if supported
+const IK_THUMB = '?tr=w-600,q-75,f-auto';
 
 const photos = [
   { file: 'RS-007.jpg',     alt: 'Engagement photos Middle Georgia' },
@@ -1443,10 +1364,12 @@ const photos = [
   { file: 'RS-004.jpg',     alt: 'Affordable wedding ceremony Macon GA' },
   { file: 'RS-005.jpg',     alt: 'Portrait session Forsyth GA near Macon' },
   { file: 'RS-006.jpg',     alt: 'Bridal photography Savannah Georgia' },
+  { file: 'RS-200.jpg',     alt: 'New baby photography Macon GA' },
   { file: 'RS-008.jpg',     alt: 'Wedding details photographer Macon Georgia' },
   { file: 'RS-009.jpg',     alt: 'Ceremony photography Macon GA' },
   { file: 'RS-0010.jpg',    alt: 'Wedding photography across Middle Georgia' },
   { file: 'RS-0011.jpg',    alt: 'Lifestyle photography Macon Warner Robins' },
+  { file: 'RS-201.jpg',    alt: 'Newborn photography Warner Robins' },
   { file: 'RS-0012.jpg',    alt: 'Portrait photography Macon Georgia' },
   { file: 'RS-0013.jpg',    alt: 'Engagement session Georgia' },
   { file: 'RS-0014.jpg',    alt: 'Wedding portrait Macon GA' },
@@ -1454,7 +1377,7 @@ const photos = [
   { file: 'RS-0016.jpg',    alt: 'Couple photography Georgia' },
   { file: 'RS-0017.jpg',    alt: 'Portrait session Warner Robins GA' },
   { file: 'RS-0018.jpg',    alt: 'Wedding photography Georgia' },
-  { file: 'RS-0019.jpg',    alt: 'Lifestyle portraits Macon Georgia' },
+  { file: 'RS-00140.JPG',    alt: 'Lifestyle portraits Macon Georgia' },
   { file: 'RS-0020.jpg',    alt: 'Family photography Macon GA' },
   { file: 'RS-0022.jpg',    alt: 'Bridal portrait Georgia photographer' },
   { file: 'RS-0023.jpg',    alt: 'Wedding details Georgia' },
@@ -1511,16 +1434,15 @@ const photos = [
 ];
 
 const masonry = document.getElementById('masonry');
-const frag = document.createDocumentFragment(); // PERFORMANCE: single DOM insertion
+const frag = document.createDocumentFragment();
 
 photos.forEach((p, i) => {
   const wrap = document.createElement('div');
   wrap.className = 'm-item reveal';
-  // PERFORMANCE: stagger only first 12 items — rest appear instantly
   if (i < 12) wrap.style.transitionDelay = (i * 0.04) + 's';
 
   const img = document.createElement('img');
-  img.src = BASE + p.file + IK_THUMB;       // thumbnail for grid
+  img.src = BASE + p.file + IK_THUMB;
   img.alt = p.alt;
   img.loading = 'lazy';
   img.decoding = 'async';
@@ -1533,12 +1455,11 @@ photos.forEach((p, i) => {
   wrap.appendChild(img);
   wrap.appendChild(ov);
 
-  // Lightbox opens full-res (no transform params)
   wrap.onclick = () => openLb(BASE + p.file);
   frag.appendChild(wrap);
 });
 
-masonry.appendChild(frag); // single reflow
+masonry.appendChild(frag);
 
 /* ─── LIGHTBOX ─────────────────────────────────────────────────────────── */
 const lb    = document.getElementById('lightbox');
@@ -1549,8 +1470,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList
 function openLb(src) { lbImg.src = src; lb.classList.add('open'); }
 
 /* ─── REVEAL (IntersectionObserver) ──────────────────────────────────── */
-// PERFORMANCE: rootMargin '0px 0px -60px 0px' — trigger slightly before
-// element enters viewport so it's visible on arrival, not after.
 const io = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
